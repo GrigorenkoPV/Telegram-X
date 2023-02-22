@@ -8504,10 +8504,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
     return sendContent(view, R.id.right_sendStickersAndGifs, R.string.ChatDisabledStickers, R.string.ChatRestrictedStickers, R.string.ChatRestrictedStickersUntil, allowReply, initialSendOptions, () -> new TdApi.InputMessageSticker(new TdApi.InputFileId(sticker.sticker.id), null, 0, 0, emoji));
   }
 
-  private void sendSticker (String path, boolean allowReply, TdApi.MessageSendOptions initialSendOptions) {
-    sendContent(null, R.id.right_sendStickersAndGifs, R.string.ChatDisabledStickers, R.string.ChatRestrictedStickers, R.string.ChatRestrictedStickersUntil, allowReply, initialSendOptions, () -> new TdApi.InputMessageSticker(TD.createInputFile(path), null, 0, 0, null));
-  }
-
   private boolean sendAnimation (View view, TdApi.Animation animation, boolean allowReply) {
     return sendContent(view, R.id.right_sendStickersAndGifs, R.string.ChatDisabledGifs, R.string.ChatRestrictedGifs, R.string.ChatRestrictedGifsUntil, allowReply, Td.newSendOptions(), () -> TD.toInputMessageContent(animation));
   }
@@ -9391,9 +9387,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
           return;
         }
 
-        if (imagePath != null && imagePath.endsWith(".webp")) {
-          sendSticker(imagePath, true, Td.newSendOptions());
-        } else if (requestCode == Intents.ACTIVITY_RESULT_GALLERY_FILE) {
+        if (requestCode == Intents.ACTIVITY_RESULT_GALLERY_FILE) {
           sendFiles(Collections.singletonList(imagePath), false, true, Td.newSendOptions());
         } else {
           sendPhotoCompressed(imagePath, 0, true);
