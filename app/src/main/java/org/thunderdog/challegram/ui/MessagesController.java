@@ -259,7 +259,6 @@ import me.vkryl.core.collection.LongList;
 import me.vkryl.core.collection.LongSet;
 import me.vkryl.core.lambda.CancellableRunnable;
 import me.vkryl.core.lambda.Future;
-import me.vkryl.core.lambda.FutureLong;
 import me.vkryl.core.lambda.RunnableBool;
 import me.vkryl.core.lambda.RunnableData;
 import me.vkryl.td.ChatId;
@@ -5443,7 +5442,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
       case R.id.btn_messageReplyWithDice: {
         if (selectedMessage != null) {
-          sendDice(itemView, ((TdApi.MessageDice) selectedMessage.getMessage().content).emoji, 0);
+          sendDice(itemView, ((TdApi.MessageDice) selectedMessage.getMessage().content).emoji);
           clearSelectedMessage();
         }
         return true;
@@ -8458,9 +8457,6 @@ public class MessagesController extends ViewController<MessagesController.Argume
 
   // Send sticker
 
-  private boolean sendContent (View view, int rightId, int defaultRes, int specificRes, int specificUntilRes, boolean canReply, TdApi.MessageSendOptions sendOptions, Future<TdApi.InputMessageContent> content) {
-    return sendContent(view, rightId, defaultRes, specificRes, specificUntilRes, canReply ? this::obtainReplyId : null, sendOptions, content);
-  }
 
   private boolean showGifRestriction (View view) {
     return showRestriction(view, R.id.right_sendStickersAndGifs, R.string.ChatDisabledStickers, R.string.ChatRestrictedStickers, R.string.ChatRestrictedStickersUntil);
@@ -8482,12 +8478,12 @@ public class MessagesController extends ViewController<MessagesController.Argume
     return tdlib.showRestriction(chat, rightId, defaultRes, specificRes, specificUntilRes);
   }
 
-  private boolean sendContent (View view, int rightId, int defaultRes, int specificRes, int specificUntilRes, FutureLong replyToMessageId, TdApi.MessageSendOptions initialSendOptions, Future<TdApi.InputMessageContent> content) {
+  private boolean sendContent (View view, int rightId, int defaultRes, int specificRes, int specificUntilRes, boolean canReply, TdApi.MessageSendOptions sendOptions, Future<TdApi.InputMessageContent> content) {
     if (showRestriction(view, rightId, defaultRes, specificRes, specificUntilRes))
       return false;
     if (hasWritePermission()) {
-      pickDateOrProceed(initialSendOptions, (modifiedSendOptions, disableMarkdown) -> {
-        tdlib.sendMessage(chat.id, getMessageThreadId(), replyToMessageId != null ? replyToMessageId.get() : 0, Td.newSendOptions(modifiedSendOptions, obtainSilentMode()), content.get(), null);
+      pickDateOrProceed(sendOptions, (modifiedSendOptions, disableMarkdown) -> {
+        tdlib.sendMessage(chat.id, getMessageThreadId(), canReply ? obtainReplyId() : 0, Td.newSendOptions(modifiedSendOptions, obtainSilentMode()), content.get(), null);
       });
       return true;
     }
@@ -8508,7 +8504,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     return sendContent(view, R.id.right_sendStickersAndGifs, R.string.ChatDisabledGifs, R.string.ChatRestrictedGifs, R.string.ChatRestrictedGifsUntil, allowReply, Td.newSendOptions(), () -> TD.toInputMessageContent(animation));
   }
 
-  private void sendDice (View view, String emoji, long messageId) {
+  private void sendDice (View view, String emoji) {
     int disabledRes, restrictedRes, restrictedUntilRes;
     if (TD.EMOJI_DART.textRepresentation.equals(emoji)) {
       disabledRes = R.string.ChatDisabledDart;
@@ -8523,7 +8519,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       restrictedRes = R.string.ChatRestrictedStickers;
       restrictedUntilRes = R.string.ChatRestrictedStickersUntil;
     }
-    sendContent(view, R.id.right_sendStickersAndGifs, disabledRes, restrictedRes, restrictedUntilRes, () -> messageId, Td.newSendOptions(), () -> new TdApi.InputMessageDice(emoji, false));
+    sendContent(view, R.id.right_sendStickersAndGifs, disabledRes, restrictedRes, restrictedUntilRes, true, Td.newSendOptions(), () -> new TdApi.InputMessageDice(emoji, false));
   }
 
   // Event log
