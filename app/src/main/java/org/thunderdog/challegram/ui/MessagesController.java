@@ -244,6 +244,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.LongStream;
 
 import me.vkryl.android.AnimatorUtils;
 import me.vkryl.android.animator.BoolAnimator;
@@ -8479,11 +8480,15 @@ public class MessagesController extends ViewController<MessagesController.Argume
   }
 
   private boolean sendContent (View view, int rightId, int defaultRes, int specificRes, int specificUntilRes, TdApi.MessageSendOptions sendOptions, Future<TdApi.InputMessageContent> content) {
+    return sendContent(view, rightId, defaultRes, specificRes, specificUntilRes, sendOptions, content, null);
+  }
+
+  private boolean sendContent (View view, int rightId, int defaultRes, int specificRes, int specificUntilRes, TdApi.MessageSendOptions sendOptions, Future<TdApi.InputMessageContent> content, RunnableData<TdApi.Message> after) {
     if (showRestriction(view, rightId, defaultRes, specificRes, specificUntilRes))
       return false;
     if (hasWritePermission()) {
       pickDateOrProceed(sendOptions, (modifiedSendOptions, disableMarkdown) -> {
-        tdlib.sendMessage(chat.id, getMessageThreadId(), obtainReplyId(), Td.newSendOptions(modifiedSendOptions, obtainSilentMode()), content.get(), null);
+        tdlib.sendMessage(chat.id, getMessageThreadId(), obtainReplyId(), Td.newSendOptions(modifiedSendOptions, obtainSilentMode()), content.get(), after);
       });
       return true;
     }
@@ -8497,7 +8502,25 @@ public class MessagesController extends ViewController<MessagesController.Argume
     if (sticker.isPremium && tdlib.ui().showPremiumAlert(this, view, TdlibUi.PremiumFeature.STICKER)) {
       return false;
     }
-    return sendContent(view, R.id.right_sendStickersAndGifs, R.string.ChatDisabledStickers, R.string.ChatRestrictedStickers, R.string.ChatRestrictedStickersUntil, initialSendOptions, () -> new TdApi.InputMessageSticker(new TdApi.InputFileId(sticker.sticker.id), null, 0, 0, emoji));
+    return sendContent(view, R.id.right_sendStickersAndGifs, R.string.ChatDisabledStickers, R.string.ChatRestrictedStickers, R.string.ChatRestrictedStickersUntil, initialSendOptions, () -> new TdApi.InputMessageSticker(new TdApi.InputFileId(sticker.sticker.id), null, 0, 0, emoji),
+      message -> moveStickerSetToSront(sticker.setId));
+  }
+
+  private void moveStickerSetToSront (long setId) {
+    tdlib.client().send(
+      new TdApi.GetInstalledStickerSets(),
+      result ->
+        tdlib.client().send(
+          new TdApi.ReorderInstalledStickerSets(
+            new TdApi.StickerTypeRegular(),
+            LongStream.concat(
+              LongStream.of(setId),
+              Arrays.stream(((TdApi.StickerSets) result).sets).mapToLong(set -> set.id).filter(i -> i != setId)
+            ).toArray()
+          ),
+          null
+        )
+    );
   }
 
   private boolean sendAnimation (View view, TdApi.Animation animation) {
