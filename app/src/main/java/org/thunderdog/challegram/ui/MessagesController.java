@@ -5443,7 +5443,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       }
       case R.id.btn_messageReplyWithDice: {
         if (selectedMessage != null) {
-          sendDice(itemView, ((TdApi.MessageDice) selectedMessage.getMessage().content).emoji, 0);
+          sendDice(itemView, ((TdApi.MessageDice) selectedMessage.getMessage().content).emoji);
           clearSelectedMessage();
         }
         return true;
@@ -8512,7 +8512,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
     return sendContent(view, R.id.right_sendStickersAndGifs, R.string.ChatDisabledGifs, R.string.ChatRestrictedGifs, R.string.ChatRestrictedGifsUntil, allowReply, Td.newSendOptions(), () -> TD.toInputMessageContent(animation));
   }
 
-  private void sendDice (View view, String emoji, long messageId) {
+  private void sendDice (View view, String emoji) {
     int disabledRes, restrictedRes, restrictedUntilRes;
     if (TD.EMOJI_DART.textRepresentation.equals(emoji)) {
       disabledRes = R.string.ChatDisabledDart;
@@ -8527,7 +8527,7 @@ public class MessagesController extends ViewController<MessagesController.Argume
       restrictedRes = R.string.ChatRestrictedStickers;
       restrictedUntilRes = R.string.ChatRestrictedStickersUntil;
     }
-    sendContent(view, R.id.right_sendStickersAndGifs, disabledRes, restrictedRes, restrictedUntilRes, () -> messageId, Td.newSendOptions(), () -> new TdApi.InputMessageDice(emoji, false));
+    sendContent(view, R.id.right_sendStickersAndGifs, disabledRes, restrictedRes, restrictedUntilRes, true, Td.newSendOptions(), () -> new TdApi.InputMessageDice(emoji, false));
   }
 
   // Event log
