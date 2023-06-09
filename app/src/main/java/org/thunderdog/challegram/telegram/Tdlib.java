@@ -10459,4 +10459,36 @@ public class Tdlib implements TdlibProvider, Settings.SettingsChangeListener {
       return chatTitle(Td.getSenderId(sender));
     }
   }
+
+  public void bringStickerSetToTop (long targetSetId) {
+    if (targetSetId == 0) {
+      return;
+    }
+    client().send(new TdApi.GetInstalledStickerSets(), result -> {
+      if (result.getConstructor() != TdApi.StickerSets.CONSTRUCTOR) {
+        // This is not supposed to happen, but it does not hurt to check.
+        return;
+      }
+      final var stickerSetsInfo = (TdApi.StickerSets) result;
+      final var stickerSets = stickerSetsInfo.sets;
+      if (stickerSets.length == 0 || stickerSets[0].id == targetSetId) {
+        // If no sets are installed, or the desired sticker set is already at the top, we do not have to do anything.
+        return;
+      }
+      // Sorting with a custom comparator to bring the target set to the top (if it is amongst the installed ones).
+      // The sort is stable, so this will not mess up the order of other sets.
+      Arrays.sort(stickerSets, (set1, set2) -> set1.id == targetSetId ? -1 : (set2.id == targetSetId ? 1 : 0));
+      if (stickerSets[0].id != targetSetId) {
+        // The target set is not installed, so we are not going to reorder anything.
+        return;
+      }
+      client().send(
+        new TdApi.ReorderInstalledStickerSets(
+          new TdApi.StickerTypeRegular(),
+          Arrays.stream(stickerSets).mapToLong(set -> set.id).toArray()
+        ),
+        null
+      );
+    });
+  }
 }
